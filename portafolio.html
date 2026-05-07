@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juan Esteban | Ingeniero Multimedia</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #06b6d4; /* Cyan */
+            --accent: #8b5cf6;  /* Purple */
+            --bg: #050505;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg);
+            color: #fff;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        
+        /* Contenedor WebGL */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #111 0%, #000 100%);
+        }
+
+        /* Utilidades Glassmorphism */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: rgba(6, 182, 212, 0.4);
+            box-shadow: 0 20px 40px rgba(6, 182, 212, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tool-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff, #888);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transition: transform 0.3s ease;
+        }
+        
+        .glass-card:hover .tool-icon {
+            transform: scale(1.1) rotate(5deg);
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        section { padding: 120px 20px; }
+
+        /* Animaciones de Scroll (Reveal) */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s cubic-bezier(0.5, 0, 0, 1);
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Retrasos escalonados para la grilla de herramientas */
+        .delay-1 { transition-delay: 0.1s; }
+        .delay-2 { transition-delay: 0.2s; }
+        .delay-3 { transition-delay: 0.3s; }
+        .delay-4 { transition-delay: 0.4s; }
+
+        .nav-link { position: relative; padding-bottom: 4px; }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background: var(--primary);
+            transition: width 0.3s ease-in-out;
+        }
+        .nav-link:hover::after { width: 100%; }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <nav class="fixed w-full z-50 px-8 py-6 flex justify-between items-center bg-black/10 backdrop-blur-md border-b border-white/5">
+        <div class="text-2xl font-extrabold tracking-tighter">JUAN<span class="text-cyan-500">MENDEZ</span></div>
+        <div class="hidden md:flex space-x-10 text-sm font-medium tracking-widest uppercase">
+            <a href="#inicio" class="nav-link">Inicio</a>
+            <a href="#sobre-mi" class="nav-link">Sobre mí</a>
+            <a href="#tools" class="nav-link">Stack</a>
+            <a href="#portafolio" class="nav-link">Portafolio</a>
+        </div>
+    </nav>
+
+    <header id="inicio" class="h-screen flex flex-col justify-center items-center text-center px-4 relative">
+        <div class="reveal active">
+            <h1 class="text-6xl md:text-8xl font-extrabold mb-6 tracking-tight">INGENIERO <br> <span class="gradient-text">MULTIMEDIA</span></h1>
+            <p class="text-gray-400 text-lg md:text-2xl max-w-2xl font-light mx-auto">
+                Transformando la complejidad técnica en fluidez visual mediante datos, código y diseño interactivo.
+            </p>
+        </div>
+        <div class="absolute bottom-12 animate-bounce">
+            <a href="#sobre-mi" class="text-cyan-500 hover:text-cyan-400 transition-colors">
+                <i class="fa-solid fa-arrow-down text-2xl opacity-70"></i>
+            </a>
+        </div>
+    </header>
+
+    <section id="sobre-mi" class="max-w-6xl mx-auto">
+        <div class="grid md:grid-cols-2 gap-16 items-center">
+            <div class="glass-card p-4 reveal">
+                <div class="w-full h-[400px] bg-gray-900 rounded-xl overflow-hidden relative">
+                    <div class="absolute inset-0 bg-gradient-to-tr from-cyan-500/20 to-purple-500/20 mix-blend-overlay"></div>
+                    <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800" alt="Tech Abstract" class="w-full h-full object-cover opacity-60">
+                </div>
+            </div>
+            <div class="reveal">
+                <h2 class="text-4xl font-bold mb-6 border-l-4 border-cyan-500 pl-4">Sobre mí</h2>
+                <p class="text-gray-300 text-lg leading-relaxed mb-6">
+                    Mi trabajo articula la tecnología, el diseño y la gestión de bases de datos. Utilizo el desarrollo y la automatización como la estructura principal para desplegar experiencias inmersivas e interfaces eficientes.
+                </p>
+                <p class="text-gray-300 text-lg leading-relaxed">
+                    Comprendo la lógica de negocio y la traduzco a soluciones digitales escalables, aplicando metodologías rigurosas de validación y arquitectura de información.
+                </p>
+            </div>
+        </div>
+    </section>
+
+   <section id="tools" class="max-w-7xl mx-auto mb-20">
+        <h2 class="text-center text-5xl font-extrabold mb-20 tracking-tighter reveal">TECH <span class="text-cyan-500">STACK</span></h2>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 px-6">
+            
+            <div class="glass-card p-8 text-center reveal delay-1">
+                <i class="fa-solid fa-database tool-icon"></i>
+                <h3 class="font-bold tracking-wide">Datos & Lógica</h3>
+                <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">MySQL • Python • Matlab</p>
+            </div>
+
+            <div class="glass-card p-8 text-center reveal delay-2">
+                <i class="fa-solid fa-code tool-icon"></i>
+                <h3 class="font-bold tracking-wide">Desarrollo Web</h3>
+                <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">JS • HTML5 • CSS</p>
+            </div>
+
+            <div class="glass-card p-8 text-center reveal delay-3">
+                <i class="fa-solid fa-cube tool-icon"></i>
+                <h3 class="font-bold tracking-wide">Entornos 3D</h3>
+                <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">Unity • Maya • C++</p>
+            </div>
+
+            <div class="glass-card p-8 text-center reveal delay-4">
+                <i class="fa-brands fa-figma tool-icon"></i>
+                <h3 class="font-bold tracking-wide">UX / UI Design</h3>
+                <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">Figma • Canva</p>
+            </div>
+
+            <div class="glass-card p-8 text-center reveal delay-1">
+                <i class="fa-solid fa-pen-nib tool-icon"></i>
+                <h3 class="font-bold tracking-wide">Diseño Gráfico</h3>
+                <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">Photoshop • Illustrator • Krita</p>
+            </div>
+
+            <div class="glass-card p-8 text-center reveal delay-2">
+                <i class="fa-solid fa-film tool-icon"></i>
+                <h3 class="font-bold tracking-wide">Post-Producción</h3>
+                <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">After Effects • Premiere</p>
+            </div>
+
+            <div class="glass-card p-8 text-center reveal delay-3">
+                <i class="fa-solid fa-headphones tool-icon"></i>
+                <h3 class="font-bold tracking-wide">Audio & Animación</h3>
+                <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">Audition • Animate</p>
+            </div>
+
+            <div class="glass-card p-8 text-center reveal delay-4">
+                <i class="fa-solid fa-laptop-code tool-icon"></i>
+                <h3 class="font-bold tracking-wide">Entornos & Gestión</h3>
+                <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">VS Code • Excel • Word</p>
+            </div>
+
+        </div>
+    </section>
+<section id="portafolio" class="max-w-7xl mx-auto mb-20">
+    <div class="text-center mb-16 reveal">
+        <h2 class="text-5xl font-bold">Proyectos <span class="text-purple-500">Destacados</span></h2>
+        <p class="text-gray-400 mt-4">Explora mi trabajo dividido en desarrollo interactivo y diseño multimedia.</p>
+    </div>
+
+    <div class="mb-20">
+        <div class="mb-8 border-l-4 border-cyan-500 pl-4 reveal">
+            <h3 class="text-3xl font-bold text-white">Desarrollo Interactivo y 3D</h3>
+            <p class="text-gray-400 text-sm mt-2">Simulaciones web, física de videojuegos y entornos inmersivos creados con código.</p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8 px-6">
+            <div class="group relative overflow-hidden rounded-[32px] h-[450px] glass-card block reveal delay-1">
+                <div class="absolute inset-0 z-0 bg-black">
+                    <iframe src="mihalowin/haloween.html" class="w-full h-full border-none outline-none" title="Escena Halloween 3D" scrolling="no"></iframe>
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10 pointer-events-none"></div>
+                <div class="absolute bottom-8 left-8 right-8 z-20 transition-transform duration-500 group-hover:-translate-y-4 pointer-events-none">
+                    <div class="flex gap-2 mb-3">
+                        <span class="px-3 py-1 text-xs font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-full backdrop-blur-sm">Three.js</span>
+                        <span class="px-3 py-1 text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-full backdrop-blur-sm">Interactivo</span>
+                    </div>
+                    <h4 class="text-3xl font-bold text-white mb-2">Escena Halloween</h4>
+                    <p class="text-sm text-gray-300 mb-5">Entorno inmersivo con iluminación. Haz clic en la luna o en los fantasmas para interactuar.</p>
+                    <div class="pointer-events-auto">
+                        <a href="mihalowin/haloween.html" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-cyan-500/20 border border-white/20 hover:border-cyan-500/50 rounded-full text-white text-xs font-bold transition-all backdrop-blur-md">
+                            Ver pantalla completa <i class="fa-solid fa-expand"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="group relative overflow-hidden rounded-[32px] h-[450px] glass-card block reveal delay-3">
+                <div class="absolute inset-0 z-0 bg-black">
+                    <iframe src="documentos/SistemaSolar/SistemaSolar.html" class="w-full h-full border-none outline-none" title="Sistema Solar 3D" scrolling="no"></iframe>
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10 pointer-events-none"></div>
+                <div class="absolute bottom-8 left-8 right-8 z-20 transition-transform duration-500 group-hover:-translate-y-4 pointer-events-none">
+                    <div class="flex gap-2 mb-3">
+                        <span class="px-3 py-1 text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-full backdrop-blur-sm">JavaScript</span>
+                        <span class="px-3 py-1 text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-full backdrop-blur-sm">Three.js</span>
+                    </div>
+                    <h4 class="text-3xl font-bold text-white mb-2">Sistema Solar 3D</h4>
+                    <p class="text-sm text-gray-300 mb-5">Simulación interactiva desarrollada con WebGL. Haz clic, arrastra para rotar y usa el scroll para hacer zoom.</p>
+                    <div class="pointer-events-auto">
+                        <a href="documentos/SistemaSolar/SistemaSolar.html" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-cyan-500/20 border border-white/20 hover:border-cyan-500/50 rounded-full text-white text-xs font-bold transition-all backdrop-blur-md">
+                            Ver pantalla completa <i class="fa-solid fa-expand"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="group relative overflow-hidden rounded-[32px] h-[450px] glass-card block reveal delay-2">
+                <div class="absolute inset-0 z-0 bg-black">
+                    <iframe src="billar/billar.html" class="w-full h-full border-none outline-none" title="Billar Interactivo" scrolling="no"></iframe>
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10 pointer-events-none"></div>
+                <div class="absolute bottom-8 left-8 right-8 z-20 transition-transform duration-500 group-hover:-translate-y-4 pointer-events-none">
+                    <div class="flex gap-2 mb-3">
+                        <span class="px-3 py-1 text-xs font-bold bg-green-500/20 text-green-400 border border-green-500/30 rounded-full backdrop-blur-sm">Game Dev</span>
+                        <span class="px-3 py-1 text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-full backdrop-blur-sm">Física 3D</span>
+                    </div>
+                    <h4 class="text-3xl font-bold text-white mb-2">Billar Interactivo</h4>
+                    <p class="text-sm text-gray-300 mb-5">Haz clic en la escena para activarla. Usa las flechas para apuntar y Espacio para golpear.</p>
+                    <div class="pointer-events-auto">
+                        <a href="billar/billar.html" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-cyan-500/20 border border-white/20 hover:border-cyan-500/50 rounded-full text-white text-xs font-bold transition-all backdrop-blur-md">
+                            Jugar pantalla completa <i class="fa-solid fa-gamepad"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-20">
+        <div class="mb-8 border-l-4 border-purple-500 pl-4 reveal">
+            <h3 class="text-3xl font-bold text-white">Diseño y Gestión Multimedia</h3>
+            <p class="text-gray-400 text-sm mt-2">Identidad corporativa, UX/UI editorial y marketing digital.</p>
+        </div>
+        
+        <div class="grid md:grid-cols-3 gap-8 px-6">
+            <a href="documentos/BrandBook.pdf" target="_blank" rel="noopener noreferrer" class="group relative overflow-hidden rounded-[32px] h-[450px] glass-card block reveal delay-3">
+                <div class="absolute inset-0 bg-gray-800 z-0">
+                    <img src="img/chango.png" alt="Streaming Web" class="w-full h-full object-cover opacity-50 group-hover:opacity-30 group-hover:scale-110 transition-all duration-700">    
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10"></div>
+                <div class="absolute bottom-10 left-8 z-20 transition-transform duration-500 group-hover:-translate-y-4 pr-4">
+                    <div class="flex gap-2 mb-3">
+                        <span class="px-3 py-1 text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-full backdrop-blur-sm">Illustrator</span>
+                        <span class="px-3 py-1 text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-full backdrop-blur-sm">Branding</span>
+                    </div>
+                    <h4 class="text-2xl font-bold text-white mb-2">Identidad: Chango</h4>
+                    <p class="text-xs text-gray-300">Diseño corporativo completo. Incluye isometría, tipografía y diseño de mascota.</p>
+                </div>
+            </a>
+
+            <a href="documentos/changoposts.pdf" target="_blank" rel="noopener noreferrer" class="group relative overflow-hidden rounded-[32px] h-[450px] glass-card block reveal delay-4">
+                <div class="absolute inset-0 bg-gray-800 z-0">
+                <img src="img/social.png" alt="Streaming Web" class="w-full h-full object-cover opacity-50 group-hover:opacity-30 group-hover:scale-110 transition-all duration-700">    
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10"></div>
+                <div class="absolute bottom-10 left-8 z-20 transition-transform duration-500 group-hover:-translate-y-4 pr-4">
+                    <div class="flex gap-2 mb-3">
+                        <span class="px-3 py-1 text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-full backdrop-blur-sm">Photoshop</span>
+                        <span class="px-3 py-1 text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-full backdrop-blur-sm">Marketing</span>
+                    </div>
+                    <h4 class="text-2xl font-bold text-white mb-2">Campaña: Chango</h4>
+                    <p class="text-xs text-gray-300">Contenido promocional para redes sociales enfocado en ecoturismo.</p>
+                </div>
+            </a>
+
+            <a href="documentos/CartaLeonardelos.pdf" target="_blank" rel="noopener noreferrer" class="group relative overflow-hidden rounded-[32px] h-[450px] glass-card block reveal delay-5">
+                <div class="absolute inset-0 bg-gray-800 z-0">
+                    <img src="img/leo.png" alt="Streaming Web" class="w-full h-full object-cover opacity-50 group-hover:opacity-30 group-hover:scale-110 transition-all duration-700">
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10"></div>
+                <div class="absolute bottom-10 left-8 z-20 transition-transform duration-500 group-hover:-translate-y-4 pr-4">
+                    <div class="flex gap-2 mb-3">
+                        <span class="px-3 py-1 text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-full backdrop-blur-sm">Illustrator</span>
+                        <span class="px-3 py-1 text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-full backdrop-blur-sm">UX Editorial</span>
+                    </div>
+                    <h4 class="text-2xl font-bold text-white mb-2">Menú: Leonardelos</h4>
+                    <p class="text-xs text-gray-300">Diseño de carta física y digital, optimizando la jerarquía visual.</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="mb-20">
+        <div class="mb-8 border-l-4 border-cyan-400 pl-4 reveal">
+            <h3 class="text-3xl font-bold text-white">Ingeniería de Producto & UX/UI</h3>
+            <p class="text-gray-400 text-sm mt-2">Visualización de datos, prototipado de alta fidelidad y desarrollo de interfaces técnicas.</p>
+        </div>
+        
+        <div class="grid md:grid-cols-3 gap-8 px-6">
+            <div class="group relative overflow-hidden rounded-[32px] h-[450px] glass-card block reveal delay-3">
+                <div class="absolute inset-0 z-0 bg-black">
+                    <iframe src="protoambiental.html" class="w-full h-full border-none outline-none" title="Geoportal" scrolling="no"></iframe>
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10 pointer-events-none"></div>
+                <div class="absolute bottom-8 left-8 right-8 z-20 transition-transform duration-500 group-hover:-translate-y-4 pointer-events-none">
+                    <div class="flex gap-2 mb-3">
+                        <span class="px-3 py-1 text-xs font-bold bg-green-500/20 text-green-400 border border-green-500/30 rounded-full backdrop-blur-sm">HTML/JS</span>
+                        <span class="px-3 py-1 text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-full backdrop-blur-sm">SIG</span>
+                    </div>
+                    <h4 class="text-3xl font-bold text-white mb-2">Geoportal & Infraestructura</h4>
+                    <p class="text-sm text-gray-300 mb-5">Web interactiva para el sector ambiental con visores cartográficos en tiempo real.</p>
+                    <div class="pointer-events-auto">
+                        <a href="protoambiental.html" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-cyan-500/20 border border-white/20 hover:border-cyan-500/50 rounded-full text-white text-xs font-bold transition-all backdrop-blur-md">
+                            Ver completo <i class="fa-solid fa-expand"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="group relative overflow-hidden rounded-[32px] h-[450px] glass-card block reveal delay-1">
+                <div class="absolute inset-0 bg-gray-800 z-0">
+                    <img src="https://images.unsplash.com/photo-1538805060514-97d9cc17730c?q=80&w=1000&auto=format&fit=crop" alt="Walk me App" class="w-full h-full object-cover opacity-50 group-hover:opacity-30 group-hover:scale-110 transition-all duration-700">
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10 pointer-events-none"></div>
+                <div class="absolute bottom-8 left-8 right-8 z-20 transition-transform duration-500 group-hover:-translate-y-4 pointer-events-none">
+                    <div class="flex gap-2 mb-3">
+                        <span class="px-3 py-1 text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-full backdrop-blur-sm">Figma</span>
+                        <span class="px-3 py-1 text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-full backdrop-blur-sm">UX/UI Mobile</span>
+                    </div>
+                    <h4 class="text-3xl font-bold text-white mb-2">Walk me: Fitness App</h4>
+                    <p class="text-xs text-gray-300 mb-5">Diseño de interfaz para monitoreo de actividad física y seguimiento de objetivos.</p>
+                    <div class="pointer-events-auto">
+                        <a href="https://www.figma.com/proto/NI19vFhShjhZvuEbW43EjI/Walk-me--Copy-?node-id=2035-384" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-cyan-500/20 border border-white/20 hover:border-cyan-500/50 rounded-full text-white text-xs font-bold transition-all backdrop-blur-md">
+                            Probar Prototipo <i class="fa-brands fa-figma"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="group relative overflow-hidden rounded-[32px] h-[450px] glass-card block reveal delay-2">
+                <div class="absolute inset-0 bg-gray-800 z-0">
+                <img src="img/anime.png" alt="Streaming Web" class="w-full h-full object-cover opacity-50 group-hover:opacity-30 group-hover:scale-110 transition-all duration-700">
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10 pointer-events-none"></div>
+                <div class="absolute bottom-8 left-8 right-8 z-20 transition-transform duration-500 group-hover:-translate-y-4 pointer-events-none">
+                    <div class="flex gap-2 mb-3">
+                        <span class="px-3 py-1 text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-full backdrop-blur-sm">Figma</span>
+                        <span class="px-3 py-1 text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-full backdrop-blur-sm">UX/UI Web</span>
+                    </div>
+                    <h4 class="text-3xl font-bold text-white mb-2">Anime Stream Pro</h4>
+                    <p class="text-xs text-gray-300 mb-5">Arquitectura de información para plataforma VOD con navegación fluida.</p>
+                    <div class="pointer-events-auto">
+                        <a href="https://www.figma.com/proto/WeMEeRULWMjVUyBxI7iYQj/Untitled?node-id=2-2" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-cyan-500/20 border border-white/20 hover:border-cyan-500/50 rounded-full text-white text-xs font-bold transition-all backdrop-blur-md">
+                            Ver Prototipo <i class="fa-solid fa-desktop"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-20 reveal">
+    <div class="container mx-auto px-6 text-center">
+        <div class="glass-card p-12 rounded-[40px] relative overflow-hidden group border border-white/10 max-w-4xl mx-auto">
+            <div class="absolute -top-24 -left-24 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px] group-hover:bg-cyan-500/20 transition-all duration-700"></div>
+            <div class="absolute -bottom-24 -right-24 w-64 h-64 bg-purple-500/10 rounded-full blur-[80px] group-hover:bg-purple-500/20 transition-all duration-700"></div>
+
+            <div class="relative z-10">
+                <h3 class="text-3xl md:text-4xl font-bold text-white mb-8 tracking-tight">
+                    ¿Te interesa mi perfil profesional?
+                </h3>
+                
+                <a href="documentos/Cv-JuanMendez.pdf" 
+                   download="CV_Juan_Esteban_Mendez.pdf"
+                   class="inline-flex items-center gap-3 px-10 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-[0_0_30px_rgba(6,182,212,0.4)] active:scale-95 group">
+                    <span>DESCARGAR HOJA DE VIDA</span>
+                    <i class="fa-solid fa-file-pdf text-xl animate-bounce group-hover:animate-none"></i>
+                </a>
+
+                <p class="mt-6 text-gray-400 text-sm font-medium uppercase tracking-[0.2em]">
+                    PDF • 1.2 MB • Actualizado 2026
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+    <footer style="padding: 50px 8%; border-top: 1px solid var(--border); text-align: center; background: var(--dark);">
+        <div style="margin-bottom: 20px;">
+            <a href="#" style="color: var(--neon); text-decoration: none; margin: 0 15px;">LinkedIn</a>
+            <a href="#" style="color: var(--neon); text-decoration: none; margin: 0 15px;">GitHub</a>
+            <a href="#" style="color: var(--neon); text-decoration: none; margin: 0 15px;">Portafolio SIG</a>
+        </div>
+        <p style="color: #666;">© 2026 Juan Méndez. Bogotá, Colombia. Ingeniería aplicada al entorno ambiental y transformación digital.</p>
+    </footer>
+
+
+
+
+
+
+
+
+
+
+    <footer class="py-10 text-center border-t border-white/5 bg-black/40 backdrop-blur-lg">
+        <p class="opacity-40 text-xs tracking-[0.2em] font-medium">JUAN MENDEZ &copy; 2026 | INGENIERO MULTIMEDIA</p>
+    </footer>
+
+    <script>
+        // 1. CONFIGURACIÓN THREE.JS
+        const scene = new THREE.Scene();
+        
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 35;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const geometry = new THREE.TorusKnotGeometry(12, 3, 150, 20);
+        const material = new THREE.MeshBasicMaterial({ 
+            color: 0x06b6d4, 
+            wireframe: true,
+            transparent: true,
+            opacity: 0.15
+        });
+        const mainObject = new THREE.Mesh(geometry, material);
+        scene.add(mainObject);
+
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 800;
+        const posArray = new Float32Array(particlesCount * 3);
+        for(let i = 0; i < particlesCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 120;
+        }
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.1,
+            color: 0x8b5cf6,
+            transparent: true,
+            opacity: 0.4
+        });
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+
+        // 2. INTERACTIVIDAD FLUIDA CON EL RATÓN (Lerp)
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetX = 0;
+        let targetY = 0;
+        const windowHalfX = window.innerWidth / 2;
+        const windowHalfY = window.innerHeight / 2;
+
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX - windowHalfX);
+            mouseY = (event.clientY - windowHalfY);
+        });
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+
+            mainObject.rotation.y += 0.002;
+            mainObject.rotation.x += 0.001;
+            particlesMesh.rotation.y = -0.001 * elapsedTime;
+
+            targetX = mouseX * 0.001;
+            targetY = mouseY * 0.001;
+            
+            mainObject.rotation.y += 0.05 * (targetX - mainObject.rotation.y);
+            mainObject.rotation.x += 0.05 * (targetY - mainObject.rotation.x);
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 3. INTERSECTION OBSERVER
+        const revealElements = document.querySelectorAll('.reveal');
+
+        const revealCallback = (entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        };
+
+        const revealOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.15
+        };
+
+        const revealObserver = new IntersectionObserver(revealCallback, revealOptions);
+
+        revealElements.forEach(el => {
+            revealObserver.observe(el);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juan Méndez | Consultoría & Geotecnología Ambiental</title>
+    
+    <!-- Librerías Core -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        :root {
+            --neon: #00ff88;
+            --dark: #05080a;
+            --glass: rgba(10, 15, 20, 0.7);
+            --border: rgba(0, 255, 136, 0.2);
+            --text: #e0e0e0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; }
+        html { scroll-behavior: smooth; }
+        body { background-color: var(--dark); color: var(--text); overflow-x: hidden; }
+
+        /* --- BACKGROUND 3D --- */
+        #canvas-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; }
+
+        /* --- NAVIGATION --- */
+        nav {
+            position: fixed; top: 0; width: 100%; z-index: 100;
+            padding: 20px 5%; display: flex; justify-content: space-between;
+            background: rgba(5, 8, 10, 0.8); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+        }
+        .logo { font-weight: 800; letter-spacing: 2px; font-size: 1.2rem; }
+        .logo span { color: var(--neon); }
+        .nav-links { display: flex; gap: 30px; align-items: center; }
+        .nav-links a { color: var(--text); text-decoration: none; font-size: 0.9rem; transition: 0.3s; }
+        .nav-links a:hover { color: var(--neon); }
+
+        /* --- HERO SECTION --- */
+        header {
+            height: 100vh; display: flex; align-items: center; padding: 0 8%;
+            background: radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.05) 0%, transparent 50%);
+        }
+        .hero-text { max-width: 650px; }
+        .tag { color: var(--neon); font-size: 0.8rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 15px; display: block; }
+        h1 { font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1.1; margin-bottom: 25px; }
+        .hero-p { font-size: 1.2rem; color: #a0a0a0; margin-bottom: 35px; line-height: 1.6; }
+
+        /* --- CARDS SECTION --- */
+        .section-padding { padding: 100px 8%; }
+        .grid-services { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+        .glass-card {
+            background: var(--glass); border: 1px solid var(--border);
+            padding: 40px; border-radius: 15px; backdrop-filter: blur(10px);
+            transition: 0.4s; position: relative; overflow: hidden;
+        }
+        .glass-card:hover { border-color: var(--neon); transform: translateY(-10px); }
+        .glass-card h3 { color: var(--neon); margin-bottom: 15px; font-size: 1.4rem; }
+        .glass-card p { font-size: 0.95rem; color: #b0b0b0; line-height: 1.6; }
+
+        /* --- MAP VISUALIZER --- */
+        .map-container { 
+            position: relative; width: 100%; height: 600px; 
+            border-radius: 20px; overflow: hidden; border: 1px solid var(--border);
+            margin-top: 50px;
+        }
+        #map { height: 100%; width: 100%; filter: invert(90%) hue-rotate(150deg) brightness(95%); }
+        .map-overlay {
+            position: absolute; top: 20px; right: 20px; z-index: 1000;
+            background: var(--glass); padding: 20px; border-radius: 10px;
+            border: 1px solid var(--border); max-width: 250px;
+        }
+
+        .btn {
+            display: inline-block; padding: 12px 30px; background: var(--neon);
+            color: var(--dark); text-decoration: none; font-weight: 700;
+            border-radius: 5px; transition: 0.3s;
+        }
+        .btn:hover { box-shadow: 0 0 20px var(--neon); transform: scale(1.05); }
+
+        h2.section-title { font-size: 2.5rem; margin-bottom: 50px; text-align: center; }
+
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <nav>
+        <div class="logo">JUAN<span>MÉNDEZ</span></div>
+        <div class="nav-links">
+            <a href="#proyectos">Proyectos</a>
+            <a href="#mapa">Geoportal</a>
+            <a href="#servicios">Servicios</a>
+            <a href="#" class="btn" style="padding: 8px 20px;">Contacto</a>
+        </div>
+    </nav>
+
+    <header>
+        <div class="hero-text">
+            <span class="tag">INGENIERÍA MULTIMEDIA & SIG</span>
+            <h1>Infraestructura de Datos para el Futuro Ambiental</h1>
+            <p class="hero-p">Optimizando la gestión del territorio mediante la automatización de procesos SIG, gobernanza de datos y visualización interactiva de alto impacto para la consultoría ambiental de vanguardia.</p>
+            <div style="display: flex; gap: 20px;">
+                <a href="#mapa" class="btn">Explorar Visor SIG</a>
+                <a href="#servicios" style="color: var(--neon); align-self: center; text-decoration: none; font-weight: 600;">Ver Servicios →</a>
+            </div>
+        </div>
+    </header>
+
+    <section id="servicios" class="section-padding">
+        <h2 class="section-title">Ejes Estratégicos</h2>
+        <div class="grid-services">
+            <div class="glass-card">
+                <h3>01. Automatización SIG</h3>
+                <p>Implementación de flujos de trabajo inteligentes con Python y ArcPy para la validación y estructuración masiva de geodatabases ambientales.</p>
+            </div>
+            <div class="glass-card">
+                <h3>02. Análisis del Territorio</h3>
+                <p>Procesamiento avanzado de coberturas de la tierra bajo metodología CORINE Land Cover e integración de sensores remotos.</p>
+            </div>
+            <div class="glass-card">
+                <h3>03. Visualización Inmersiva</h3>
+                <p>Desarrollo de geoportales y experiencias 3D interactivas para la presentación técnica de Estudios de Impacto Ambiental (EIA).</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="mapa" class="section-padding">
+        <h2 class="section-title">Geoportal Interactivo</h2>
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="map-overlay">
+                <h4 style="color: var(--neon); margin-bottom: 10px;">Control de Capas</h4>
+                <p style="font-size: 0.8rem; margin-bottom: 15px;">Visualización en tiempo real de áreas de intervención y monitoreo ambiental.</p>
+                <div style="font-size: 0.85rem;">
+                    <div style="margin-bottom: 5px;">● AID Proyecto</div>
+                    <div style="margin-bottom: 5px;">● Coberturas Vegetales</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer style="padding: 50px 8%; border-top: 1px solid var(--border); text-align: center; background: var(--dark);">
+        <p style="color: #666;">© 2026 Juan Méndez. Bogotá, Colombia. Ingeniería aplicada al entorno ambiental.</p>
+    </footer>
+
+    <script>
+        // --- THREE.JS: GLOBO DE DATOS ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        const group = new THREE.Group();
+        group.position.x = window.innerWidth > 768 ? 20 : 0;
+        scene.add(group);
+
+        // Geometría de puntos
+        const geometry = new THREE.IcosahedronGeometry(20, 3);
+        const material = new THREE.PointsMaterial({
+            color: 0x00ff88,
+            size: 0.25,
+            transparent: true,
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending
+        });
+        const points = new THREE.Points(geometry, material);
+        group.add(points);
+
+        // Anillo orbital
+        const ringGeo = new THREE.TorusGeometry(28, 0.1, 2, 100);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.1, wireframe: true });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2;
+        group.add(ring);
+
+        camera.position.z = 60;
+
+        // Mouse interaction
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) / 100;
+            mouseY = (e.clientY - window.innerHeight / 2) / 100;
+        });
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            points.rotation.y += 0.002;
+            ring.rotation.z += 0.001;
+            group.rotation.x += (mouseY * 0.1 - group.rotation.x) * 0.05;
+            group.rotation.y += (mouseX * 0.1 - group.rotation.y) * 0.05;
+            renderer.render(scene, camera);
+        }
+        animate3D();
+
+        // --- LEAFLET: MAPA ---
+        const map = L.map('map', { scrollWheelZoom: false }).setView([4.65, -74.1], 12);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+        // Simulación de datos espaciales
+        const aid = L.circle([4.65, -74.1], {
+            color: '#00ff88', fillColor: '#00ff88', fillOpacity: 0.2, radius: 4000
+        }).addTo(map);
+        aid.bindPopup("Área de Influencia Directa - Proyecto GEOTEC");
+
+        // Ajuste responsive
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

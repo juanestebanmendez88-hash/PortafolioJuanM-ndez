@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Simulador de Billar 3D</title>
+        <style>
+            body { margin: 0; background-color: #000; overflow: hidden; }
+        </style>
+    </head>
+    <body>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r119/three.js"></script>
+        <script src="https://cdn.rawgit.com/mrdoob/three.js/r119/examples/js/controls/OrbitControls.js"></script>
+
+        <script> 
+        const scene = new THREE.Scene();
+        // Estética: Fondo oscuro y atmósfera de niebla para estilo billar clásico
+        scene.background = new THREE.Color(0x111118);
+        scene.fog = new THREE.FogExp2(0x111118, 0.003);
+
+        const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+        
+        // Estética: Renderizador con antialiasing y mapeo de tonos realista
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        document.body.appendChild( renderer.domElement );
+        camera.position.set(0, 80, 80); 
+
+        // ==========================================
+        // ILUMINACIÓN 
+        // ==========================================
+        const lightambiente = new THREE.AmbientLight( 0xffffff, 1.5 ); 
+        scene.add( lightambiente );
+
+        const mainSpotlight = new THREE.SpotLight( 0xfff0dd, 1.5 );
+        mainSpotlight.position.set( 0, 60, 0 );
+        mainSpotlight.angle = Math.PI / 4;
+        mainSpotlight.penumbra = 0.5;
+        mainSpotlight.castShadow = true;
+        mainSpotlight.shadow.mapSize.width = 1024;
+        mainSpotlight.shadow.mapSize.height = 1024;
+        mainSpotlight.shadow.camera.near = 10;
+        mainSpotlight.shadow.camera.far = 200;
+        mainSpotlight.shadow.bias = -0.001;
+        scene.add( mainSpotlight );
+
+        const fillLight = new THREE.PointLight( 0xaaaaee, 0.5, 300 );
+        fillLight.position.set( 50, 80, -50 );
+        scene.add( fillLight );
+
+        // ==========================================
+        // SISTEMA DE INTERACTIVIDAD (RAYCASTER)
+        // ==========================================
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const objetosInteractivos = [];
+
+        window.addEventListener('mousemove', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        window.addEventListener('click', () => {
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(objetosInteractivos, false);
+            
+            if (intersects.length > 0) {
+                const obj = intersects[0].object;
+                if (obj.userData.tipo === 'tv') {
+                    obj.material.emissive.setHex(Math.random() * 0xffffff); // Cambiar canal
+                } else if (obj.userData.tipo === 'neon') {
+                    obj.userData.encendido = !obj.userData.encendido; // Apagar/Encender
+                }
+            }
+        });
+
+        // ==========================================
+        // TEXTURAS Y SUELO
+        // ==========================================
+        const texturepisocolor = new THREE.TextureLoader().load("textures/piso.jpg");
+        texturepisocolor.wrapS = THREE.RepeatWrapping;
+        texturepisocolor.wrapT = THREE.RepeatWrapping;
+        texturepisocolor.repeat.set(15, 15); 
+
+        const materialpiso = new THREE.MeshStandardMaterial({ 
+            color: 0x888888, map: texturepisocolor, roughness: 0.8, metalness: 0.1
+        }); 
+
+        const geometrypiso = new THREE.BoxGeometry( 250, 1, 250 ); 
+        const Piso = new THREE.Mesh( geometrypiso, materialpiso ); 
+        Piso.receiveShadow = true; 
+        Piso.position.y = -3;
+        scene.add( Piso );
+
+        // ==========================================
+        // MESAS DE BILLAR
+        // ==========================================
+        const texturabasebillar = new THREE.TextureLoader().load("textures/base.jpeg");
+        const texturamadebillar = new THREE.TextureLoader().load("textures/made.jpg");
+        const texturamadebillar2 = new THREE.TextureLoader().load("textures/made.jpeg");
+
+        function crearMesaBillar(x, z) {
+            const materialSuperficie = new THREE.MeshStandardMaterial({ map: texturabasebillar, roughness: 0.9, metalness: 0.0 });
+            const materialBorde = new THREE.MeshStandardMaterial({ map: texturamadebillar, roughness: 0.4, metalness: 0.1 }); 
+            const materialPatas = new THREE.MeshStandardMaterial({ map: texturamadebillar2, roughness: 0.6, metalness: 0.1 });
+
+            const geometrySuperficie = new THREE.BoxGeometry(36, 2, 27);
+            const superficie = new THREE.Mesh(geometrySuperficie, materialSuperficie);
+            superficie.position.set(x, 6, z);
+            superficie.receiveShadow = true;
+            scene.add(superficie);
+
+            const geometryBase = new THREE.BoxGeometry(40, 2, 29);
+            const base = new THREE.Mesh(geometryBase, materialBorde);
+            base.position.set(x, 5, z);
+            base.castShadow = true; base.receiveShadow = true;
+            scene.add(base);
+
+            const geometryBordeLargo = new THREE.BoxGeometry(36, 3, 2);
+            const bordeFrontal = new THREE.Mesh(geometryBordeLargo, materialBorde);
+            bordeFrontal.position.set(x, 7.5, z - 13);
+            bordeFrontal.castShadow = true;
+            scene.add(bordeFrontal);
+
+            const bordeTrasero = bordeFrontal.clone();
+            bordeTrasero.position.set(x, 7.5, z + 13);
+            scene.add(bordeTrasero);
+
+            const geometryBordeCorto = new THREE.BoxGeometry(2, 3, 27);
+            const bordeIzquierdo = new THREE.Mesh(geometryBordeCorto, materialBorde);
+            bordeIzquierdo.position.set(x - 17, 7.5, z);
+            bordeIzquierdo.castShadow = true;
+            scene.add(bordeIzquierdo);
+
+            const bordeDerecho = bordeIzquierdo.clone();
+            bordeDerecho.position.set(x + 19, 7.5, z);
+            scene.add(bordeDerecho);
+
+            const geometryPata = new THREE.CylinderGeometry(2, 2, 8, 32);
+            const posicionesPatas = [ [-15, 1, -11], [18, 1, -11], [18, 1, 10], [-15, 1, 10] ];
+            posicionesPatas.forEach(pos => {
+                const pata = new THREE.Mesh(geometryPata, materialPatas);
+                pata.position.set(x + pos[0], pos[1], z + pos[2]);
+                pata.castShadow = true;
+                scene.add(pata);
+            });
+        }
+
+        const filas = 3; const columnas = 3; const espacio = 53;
+        for (let i = 0; i < filas; i++) {
+            for (let j = 0; j < columnas; j++) {
+                crearMesaBillar(j * espacio - espacio, i * espacio - espacio);
+            }
+        }
+
+        // ==========================================
+        // TACOS ESTÁTICOS
+        // ==========================================
+        const materialTaco = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.3 });
+        const taco1 = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 1, 30, 16), materialTaco);
+        taco1.position.set(-10, 10, 19);
+        taco1.rotation.z = Math.PI / 4;
+        taco1.castShadow = true;
+        scene.add(taco1);
+
+        const taco2 = taco1.clone();
+        taco2.position.set(15, 10, -19);
+        scene.add(taco2);
+
+        // ==========================================
+        // SILLAS ALTAS Y MESITAS ORIGINALES
+        // ==========================================
+        const texturesilla = new THREE.TextureLoader().load("textures/silla.jpeg");
+        const materialSilla = new THREE.MeshStandardMaterial({ map: texturesilla, roughness: 0.8 });
+
+        const asiento = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 1, 32), materialSilla);
+        asiento.position.set(0, 5, 0);
+        asiento.castShadow = true;
+
+        const pata1 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 10, 16), materialSilla);
+        pata1.position.set(3, 0, 3); pata1.castShadow = true;
+        const pata2 = pata1.clone(); pata2.position.set(-3, 0, 3);
+        const pata3 = pata1.clone(); pata3.position.set(3, 0, -3);
+        const pata4 = pata1.clone(); pata4.position.set(-3, 0, -3);
+
+        const respaldo = new THREE.Mesh(new THREE.BoxGeometry(8, 10, 1), materialSilla);
+        respaldo.position.set(0, 10, -3.5);
+        respaldo.castShadow = true;
+
+        const silla = new THREE.Group();
+        silla.add(asiento, pata1, pata2, pata3, pata4, respaldo);
+        silla.position.set(-110, 0, 57);
+        silla.rotation.y = Math.PI / 2;
+        scene.add(silla);
+
+        const posicionesSillas = [
+            { x: -110, z: 10 }, { x:-110, z: -5 }, { x: -110, z: -20 },
+            { x: -110, z: -100 }, { x: -110, z: -60 }, { x: -110, z: 100 },
+            { x: -100, z: -79 }, { x: -100, z: 79 },
+        ];
+        posicionesSillas.forEach(pos => {
+            const nuevaSilla = silla.clone(); 
+            nuevaSilla.position.set(pos.x, 0, pos.z); 
+            scene.add(nuevaSilla); 
+        });
+
+        const texturemesita = new THREE.TextureLoader().load("textures/mesita.jpeg");
+        const materialMesa = new THREE.MeshStandardMaterial({ map: texturemesita, roughness: 0.6 }); 
+        const tablero = new THREE.Mesh(new THREE.CylinderGeometry(12, 1, 8, 32), materialMesa);
+        tablero.castShadow = true;
+        const pataMesa = new THREE.Mesh(new THREE.CylinderGeometry(4, 1, 18, 32), materialMesa);
+        pataMesa.castShadow = true;
+
+        const mesita1 = new THREE.Group();
+        tablero.position.set(0, 9, 0);
+        pataMesa.position.set(0, 4, 0);
+        mesita1.add(tablero, pataMesa);
+        mesita1.position.set(-92, 0, 37); 
+        scene.add(mesita1);
+
+        const mesita2 = mesita1.clone();
+        mesita2.position.set(-92, 0, -37);
+        scene.add(mesita2);
+
+        // ==========================================
+        // ESTANTES DE PALOS ORIGINALES
+        // ==========================================
+        const materialEstante = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.7 }); 
+        const materialPalo = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.4 }); 
+
+        const anchoEstante = 30; const altoEstante = 25; const profundidadEstante = 12;
+
+        function crearEstante(posX, posZ) {
+            const baseEstante = new THREE.Mesh(new THREE.BoxGeometry(anchoEstante, 2, profundidadEstante), materialEstante);
+            const techoEstante = new THREE.Mesh(new THREE.BoxGeometry(anchoEstante, 2, profundidadEstante), materialEstante);
+            baseEstante.position.set(0, 1, 0); baseEstante.castShadow = true;
+            techoEstante.position.set(0, altoEstante, 0); techoEstante.castShadow = true;
+
+            const soporte1 = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, altoEstante, 32), materialEstante);
+            const soporte2 = soporte1.clone();
+            soporte1.position.set(-anchoEstante / 2 + 2, altoEstante / 2, 0); soporte1.castShadow = true;
+            soporte2.position.set(anchoEstante / 2 - 2, altoEstante / 2, 0); soporte2.castShadow = true;
+
+            const estante = new THREE.Group();
+            estante.add(baseEstante, techoEstante, soporte1, soporte2);
+
+            for (let i = -12; i <= 12; i += 4) {
+                const soportePalo = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 2, 16), materialEstante);
+                soportePalo.position.set(i, altoEstante - 1, 0);
+                estante.add(soportePalo);
+
+                const palo = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, altoEstante - 4, 16), materialPalo);
+                palo.position.set(i, altoEstante / 2, 0); palo.castShadow = true;
+                estante.add(palo);
+            }
+            estante.position.set(posX, 0, posZ); 
+            scene.add(estante);
+        }
+        crearEstante(50, -100); 
+        crearEstante(-50, -100); 
+
+        // ==========================================
+        // ESTANTE DE BOLAS ORIGINAL
+        // ==========================================
+        const materialEstanteBolas = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.7 }); 
+        const anchoEstanteBolas = 20; const altoEstanteBolas = 15; const profundidadEstanteBolas = 8;
+
+        function crearEstanteBolas(posX, posZ) {
+            const baseEstante = new THREE.Mesh(new THREE.BoxGeometry(anchoEstanteBolas, 2, profundidadEstanteBolas), materialEstanteBolas);
+            const techoEstante = baseEstante.clone();
+            baseEstante.position.set(0, 1, 0); baseEstante.castShadow = true;
+            techoEstante.position.set(0, altoEstanteBolas, 0); techoEstante.castShadow = true;
+
+            const soporteIzq = new THREE.Mesh(new THREE.BoxGeometry(2, altoEstanteBolas, profundidadEstanteBolas), materialEstanteBolas);
+            const soporteDer = soporteIzq.clone();
+            soporteIzq.position.set(-anchoEstanteBolas / 2, altoEstanteBolas / 2, 0); soporteIzq.castShadow = true;
+            soporteDer.position.set(anchoEstanteBolas / 2, altoEstanteBolas / 2, 0); soporteDer.castShadow = true;
+
+            const estanteBolas = new THREE.Group();
+            estanteBolas.add(baseEstante, techoEstante, soporteIzq, soporteDer);
+
+            const numEstantes = 3;
+            for (let i = 1; i <= numEstantes; i++) {
+                const estante = new THREE.Mesh(new THREE.BoxGeometry(anchoEstanteBolas, 1, profundidadEstanteBolas), materialEstanteBolas);
+                estante.position.set(0, (i * altoEstanteBolas) / (numEstantes + 1), 0);
+                estante.castShadow = true;
+                estanteBolas.add(estante);
+            }
+
+            let colores = [0xff0000, 0x0000ff, 0xffff00, 0x00ff00, 0xff00ff, 0x111111, 0xffa500]; 
+            for (let i = 0; i < numEstantes; i++) {
+                for (let j = -2; j <= 2; j++) {
+                    const materialBolaColor = new THREE.MeshStandardMaterial({ color: colores[(i + j + colores.length) % colores.length], roughness: 0.1 });
+                    const bola = new THREE.Mesh(new THREE.SphereGeometry(1.5, 32, 32), materialBolaColor);
+                    bola.position.set(j * 4, (i * altoEstanteBolas) / (numEstantes + 1) + 1.5, 0);
+                    bola.castShadow = true;
+                    estanteBolas.add(bola);
+                }
+            }
+            estanteBolas.position.set(posX, 0, posZ);
+            scene.add(estanteBolas);
+        }
+        crearEstanteBolas(2, -100);
+
+        // ==========================================
+        // MARCADOR, PAREDES, PUERTA Y AVISO
+        // ==========================================
+        const materialMarcador = new THREE.MeshStandardMaterial({ color: 0xdddddd, emissive: 0x222222 });
+        const marcador = new THREE.Mesh(new THREE.BoxGeometry(30, 15, 3), materialMarcador);
+        marcador.position.set(0, 40, -105);
+        marcador.castShadow = true;
+        scene.add(marcador);
+
+        const texturaPared = new THREE.TextureLoader().load("textures/ladrillo.jpeg");
+        texturaPared.wrapS = THREE.RepeatWrapping; texturaPared.wrapT = THREE.RepeatWrapping;
+        texturaPared.repeat.set(4, 2);
+        const materialPared = new THREE.MeshStandardMaterial({ map: texturaPared, roughness: 0.9 });
+        
+        const materialPuerta = new THREE.MeshStandardMaterial({ color: 0x654321, roughness: 0.8 });
+        // Aviso mejorado: ahora brilla como un neón rojo
+        const materialAviso = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xcc0000, emissiveIntensity: 1.5 });
+
+        const alturaPared = 45; const grosorPared = 2;
+        const alturaPuerta = 22; const anchoPuerta = 14;  
+        const anchoAviso = 30; const alturaAviso = 15;
+
+        const paredFrontalIzq = new THREE.Mesh(new THREE.BoxGeometry(80, alturaPared, grosorPared), materialPared);
+        paredFrontalIzq.position.set(-85, alturaPared / 2 - 2, 125);
+        paredFrontalIzq.receiveShadow = true;
+
+        const paredFrontalDer = new THREE.Mesh(new THREE.BoxGeometry(80, alturaPared, grosorPared), materialPared);
+        paredFrontalDer.position.set(85, alturaPared / 2 - 2, 125);
+        paredFrontalDer.receiveShadow = true;
+
+        const puerta = new THREE.Mesh(new THREE.BoxGeometry(anchoPuerta, alturaPuerta, grosorPared), materialPuerta);
+        puerta.position.set(0, alturaPuerta / 2 - 3, 124.5);
+
+        const aviso = new THREE.Mesh(new THREE.BoxGeometry(anchoAviso, alturaAviso, grosorPared), materialAviso);
+        aviso.position.set(0, 40, 124.5);
+
+        const paredFondo = new THREE.Mesh(new THREE.BoxGeometry(250, alturaPared, grosorPared), materialPared);
+        paredFondo.position.set(0, alturaPared / 2 - 2, -125);
+        paredFondo.receiveShadow = true;
+
+        const paredIzquierda = new THREE.Mesh(new THREE.BoxGeometry(grosorPared, alturaPared, 250), materialPared);
+        paredIzquierda.position.set(-125, alturaPared / 2 - 2, 0);
+        paredIzquierda.receiveShadow = true;
+
+        const paredDerecha = new THREE.Mesh(new THREE.BoxGeometry(grosorPared, alturaPared, 250), materialPared);
+        paredDerecha.position.set(125, alturaPared / 2 - 2, 0);
+        paredDerecha.receiveShadow = true;
+
+        scene.add(paredFondo, paredIzquierda, paredDerecha);
+        scene.add(paredFrontalIzq, paredFrontalDer);
+        scene.add(puerta, aviso);
+
+        // Televisor Interactivo (Separado en cuerpo y pantalla luminosa)
+        const tvCuerpo = new THREE.Mesh(new THREE.BoxGeometry(50, 30, 2), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+        const tvPantalla = new THREE.Mesh(new THREE.BoxGeometry(48, 28, 2.2), new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x113355 }));
+        tvPantalla.userData = { tipo: 'tv' }; 
+        objetosInteractivos.push(tvPantalla); // Interactividad
+
+        const televisor = new THREE.Group();
+        televisor.add(tvCuerpo, tvPantalla);
+        televisor.position.set(123, alturaPared / 2, 0);
+        televisor.rotation.y = Math.PI / 2;
+        scene.add(televisor);
+
+        const estante1 = new THREE.Mesh(new THREE.BoxGeometry(50, 2, 10), materialEstante);
+        estante1.position.set(123, alturaPared / 2 + 20, 0);
+        estante1.rotation.y = Math.PI / 2; estante1.castShadow = true;
+        scene.add(estante1);
+
+        const estante2 = new THREE.Mesh(new THREE.BoxGeometry(50, 2, 10), materialEstante);
+        estante2.position.set(123, alturaPared / 2 - 20, 0);
+        estante2.rotation.y = Math.PI / 2; estante2.castShadow = true;
+        scene.add(estante2);
+
+        // ==========================================
+        // ELEMENTOS DINÁMICOS Y CURIOSOS
+        // ==========================================
+        // 1. Letrero de Neón en la pared de fondo
+        const neonMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xff0055, emissiveIntensity: 2 });
+        const neon = new THREE.Mesh(new THREE.TorusGeometry(12, 0.8, 16, 100), neonMat);
+        neon.position.set(60, 30, -123);
+        neon.userData = { tipo: 'neon', encendido: true };
+        scene.add(neon);
+        objetosInteractivos.push(neon);
+
+        // 2. Ventiladores de Techo
+        const ventiladores = [];
+        function crearVentilador(x, z) {
+            const ventilador = new THREE.Group();
+            const motor = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 3, 16), new THREE.MeshStandardMaterial({color: 0x222222, metalness: 0.8}));
+            ventilador.add(motor);
+            
+            const aspaMat = new THREE.MeshStandardMaterial({color: 0x111111});
+            for(let i = 0; i < 4; i++) {
+                const aspa = new THREE.Mesh(new THREE.BoxGeometry(16, 0.2, 3), aspaMat);
+                aspa.position.x = 9;
+                const pivot = new THREE.Group();
+                pivot.rotation.y = (Math.PI / 2) * i;
+                pivot.add(aspa);
+                ventilador.add(pivot);
+            }
+            ventilador.position.set(x, 43, z);
+            scene.add(ventilador);
+            ventiladores.push(ventilador);
+        }
+        crearVentilador(-60, 0);
+        crearVentilador(60, 0);
+
+        // ==========================================
+        // FÍSICAS Y LÓGICA DE JUEGO (INTACTAS)
+        // ==========================================
+        var ancho = 16;
+        var largo = 11;
+
+        function CrearBall(pox, poy, poz, Micolor) {
+            const geometry = new THREE.SphereGeometry(1.2, 32, 16); 
+            const material = new THREE.MeshStandardMaterial({ color: Micolor, roughness: 0.1, metalness: 0.1 }); 
+            const sphere = new THREE.Mesh(geometry, material); 
+            sphere.castShadow = true;
+            scene.add(sphere);
+            sphere.position.set(pox, poy, poz)
+            return {
+                Mesh: sphere, position: new THREE.Vector3(pox, poy, poz),
+                velocity: new THREE.Vector3(0, 0, 0),
+                radio: 1.2, mass: 1, friccion: 0.99 
+            };
+        }
+
+        const geometry3 = new THREE.CylinderGeometry(0.4, 0.6, 20, 32); 
+        const taco = new THREE.Mesh(geometry3, materialTaco); 
+        taco.rotation.x = Math.PI / 2; taco.castShadow = true;
+        scene.add(taco);
+
+        function MoverBall(ball) {
+            ball.velocity.multiplyScalar(ball.friccion); 
+            ball.position.add(ball.velocity); 
+            ball.Mesh.position.copy(ball.position);
+            if(ball.velocity.length() < 0.01) ball.velocity.set(0, 0, 0);
+        }
+
+        function ReboteBorde(ball) {
+            if(Math.abs(ball.position.x + ball.radio) > ancho) ball.velocity.x *= -1;
+            if(Math.abs(ball.position.z + ball.radio) > largo) ball.velocity.z *= -1;
+        }
+
+        function BallsColision(ball1, ball2) {
+            const d = ball1.position.distanceTo(ball2.position);
+            if(d < (ball1.radio + ball2.radio)) {
+                var NormalColision = ball1.position.clone().sub(ball2.position).normalize(); 
+                var velocidadRelativa = ball1.velocity.clone().sub(ball2.velocity);
+                var velocidadNormal = velocidadRelativa.dot(NormalColision);
+
+                if(velocidadNormal > 0) return;
+
+                var restitucion = 1;
+                var impulso = (-(1 + restitucion) * velocidadNormal) / (ball2.mass + ball1.mass);
+
+                ball1.velocity.add(NormalColision.clone().multiplyScalar(impulso * ball1.mass));
+                ball2.velocity.sub(NormalColision.clone().multiplyScalar(impulso * ball2.mass));
+            }
+        }
+
+        var Balls = [ 
+            CrearBall(0, 7.2, 0, 0xeeeeee), CrearBall(5, 7.2, 2, 0xff2222),
+            CrearBall(-2, 7.2, 0, 0xffa500), CrearBall(5, 7.2, -7, 0x2222ff),
+            CrearBall(3, 7.2, -3, 0x22ff22),
+        ];
+
+        var t = 0; var V = 1;
+        document.addEventListener("keydown", (event) => {
+            switch (event.key) {
+                case "ArrowUp": V += 0.1; break;
+                case "ArrowDown": V -= 0.1; break;
+                case "ArrowLeft": t -= 0.1; break;
+                case "ArrowRight": t += 0.1; break;
+                case " ":
+                    if(Balls[0].velocity.length() == 0) {
+                        Balls[0].velocity.x = -V * 0.5 * Math.sin(t);
+                        Balls[0].velocity.z = V * 0.5 * Math.cos(t);
+                    }
+                    break;
+            }
+        });
+
+        const controls = new THREE.OrbitControls( camera, renderer.domElement );
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        function animate() {
+            controls.update();
+
+            // Interacciones visuales (Ventilador y Neón)
+            ventiladores.forEach(v => v.rotation.y += 0.02);
+            if (neon.userData.encendido) {
+                neon.material.emissiveIntensity = 2 + Math.sin(Date.now() * 0.01) * 0.5; 
+            } else {
+                neon.material.emissiveIntensity = 0;
+            }
+
+            // Detección visual de puntero sobre interactivos
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(objetosInteractivos, false);
+            if (intersects.length > 0) {
+                document.body.style.cursor = 'pointer';
+            } else {
+                document.body.style.cursor = 'default';
+            }
+
+            // Físicas del taco y pelotas
+            if (Balls[0].velocity.length() > 0.009) {
+                taco.visible = false;
+            } else {
+                taco.visible = true;
+            }
+
+            taco.position.x = Balls[0].position.x + Math.sin(t) * V * 8.3;  
+            taco.position.y = Balls[0].position.y; 
+            taco.position.z = Balls[0].position.z - Math.cos(t) * V * 8.3;
+            taco.rotation.z = t;
+
+            for(var i=0; i<Balls.length; i++) { 
+                MoverBall(Balls[i]);
+                ReboteBorde(Balls[i]);
+            }
+            for(var i=0; i<Balls.length; i++) { 
+                for(var j=i+1; j<Balls.length; j++) { 
+                    BallsColision(Balls[i], Balls[j]);
+                }
+            }
+
+            renderer.render( scene, camera );
+        }
+        renderer.setAnimationLoop( animate );
+        </script>
+    </body>
+</html>

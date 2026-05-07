@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>Sistema Solar Pro - Juan Méndez</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; }
+        #info { 
+            position: absolute; top: 15px; width: 100%; 
+            text-align: center; color: rgba(0, 255, 136, 0.8); 
+            font-family: 'Segoe UI', sans-serif; pointer-events: none;
+            text-transform: uppercase; letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Exploración Espacial SIG - Arrastra para rotar | Scroll para zoom</div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r119/three.min.js"></script>
+    <script src="https://cdn.rawgit.com/mrdoob/three.js/r119/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // 1. CONFIGURACIÓN DE ESCENA Y CÁMARA
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 15, 25); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; 
+        controls.dampingFactor = 0.05;
+
+        // 2. ILUMINACIÓN Y FONDO
+        const ambientLight = new THREE.AmbientLight(0x444444); // Mayor claridad base
+        scene.add(ambientLight);
+
+        const sunLight = new THREE.PointLight(0xffffff, 2.5, 150); // Luz solar potente
+        scene.add(sunLight);
+
+        // Campo de estrellas (Partículas)
+        const starGeo = new THREE.BufferGeometry();
+        const starMat = new THREE.PointsMaterial({color: 0xffffff, size: 0.02});
+        const starVertices = [];
+        for(let i = 0; i < 5000; i++) {
+            const x = (Math.random() - 0.5) * 400;
+            const y = (Math.random() - 0.5) * 400;
+            const z = (Math.random() - 0.5) * 400;
+            starVertices.push(x, y, z);
+        }
+        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+        const stars = new THREE.Points(starGeo, starMat);
+        scene.add(stars);
+
+        // 3. CARGA DE TEXTURAS
+        const textureLoader = new THREE.TextureLoader();
+        const t = {
+            sol: textureLoader.load("sol.jpg"),
+            mercurio: textureLoader.load("mercurio.jpg"),
+            venus: textureLoader.load("venus.jpg"),
+            tierra: textureLoader.load("tierra.jpg"),
+            luna: textureLoader.load("luna.jpg"),
+            marte: textureLoader.load("marte.jpg"),
+            jupiter: textureLoader.load("jupiter.jpg"),
+            saturno: textureLoader.load("saturno.jpg"),
+            urano: textureLoader.load("urano.jpg"),
+            neptuno: textureLoader.load("neptuno.jpg"),
+            pluto: textureLoader.load("pluto.jpg")
+        };
+
+        // 4. EL SOL (Luz propia)
+        const solGeo = new THREE.SphereGeometry(2, 64, 64);
+        const solMat = new THREE.MeshBasicMaterial({ map: t.sol });
+        const sol = new THREE.Mesh(solGeo, solMat);
+        scene.add(sol);
+
+        // 5. LÓGICA DE PLANETAS CON ÓRBITAS DE ALTA VISIBILIDAD
+        const planetas = [];
+
+        const crearPlaneta = (radio, distancia, textura, vOrbita, vRotacion, tieneAnillos = false) => {
+            const pivote = new THREE.Object3D();
+            scene.add(pivote);
+
+            // Malla del Planeta
+            const pGeo = new THREE.SphereGeometry(radio, 64, 64);
+            const pMat = new THREE.MeshStandardMaterial({ map: textura, roughness: 0.8 });
+            const malla = new THREE.Mesh(pGeo, pMat);
+            malla.position.x = distancia;
+            pivote.add(malla);
+
+            // --- ÓRBITAS DE ALTA VISIBILIDAD (TORUS) ---
+            const grosorLinea = 0.02; // Hace que la línea tenga cuerpo real
+            const orbitGeo = new THREE.TorusGeometry(distancia, grosorLinea, 16, 200);
+            const orbitMat = new THREE.MeshStandardMaterial({ 
+                color: 0x00ffcc,       // Verde Cian neón
+                emissive: 0x00ffcc,    // Brillo propio
+                emissiveIntensity: 0.6,
+                transparent: true,
+                opacity: 0.5 
+            });
+            const orbitMesh = new THREE.Mesh(orbitGeo, orbitMat);
+            orbitMesh.rotation.x = Math.PI / 2;
+            scene.add(orbitMesh);
+
+            if (tieneAnillos) {
+                const ringGeo = new THREE.RingGeometry(radio * 1.5, radio * 2.5, 64);
+                const ringMat = new THREE.MeshBasicMaterial({ 
+                    map: t.saturno, // O textura de anillos si tienes
+                    transparent: true, 
+                    opacity: 0.6, 
+                    side: THREE.DoubleSide 
+                });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = Math.PI / 2.3;
+                malla.add(ring);
+            }
+
+            planetas.push({ pivote, malla, vOrbita, vRotacion });
+            return { pivote, malla };
+        };
+
+        // Escala de tamaños y distancias ajustada para visualización
+        crearPlaneta(0.2, 5, t.mercurio, 0.02, 0.01);
+        crearPlaneta(0.4, 8, t.venus, 0.012, 0.005);
+        
+        const tierraSist = crearPlaneta(0.5, 12, t.tierra, 0.008, 0.02);
+        
+        // Luna (Hija de la Tierra)
+        const lunaGeo = new THREE.SphereGeometry(0.12, 32, 32);
+        const lunaMat = new THREE.MeshStandardMaterial({ map: t.luna });
+        const luna = new THREE.Mesh(lunaGeo, lunaMat);
+        const lunaPivote = new THREE.Object3D();
+        luna.position.x = 1.2;
+        lunaPivote.add(luna);
+        tierraSist.malla.add(lunaPivote);
+
+        crearPlaneta(0.35, 16, t.marte, 0.006, 0.018);
+        crearPlaneta(1.2, 22, t.jupiter, 0.003, 0.04);
+        crearPlaneta(1.0, 28, t.saturno, 0.002, 0.035, true);
+        crearPlaneta(0.7, 34, t.urano, 0.0015, 0.025);
+        crearPlaneta(0.7, 38, t.neptuno, 0.001, 0.02);
+        crearPlaneta(0.15, 42, t.pluto, 0.0008, 0.005);
+
+        // 6. ANIMACIÓN
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            sol.rotation.y += 0.001;
+
+            planetas.forEach(p => {
+                p.pivote.rotation.y += p.vOrbita;
+                p.malla.rotation.y += p.vRotacion;
+            });
+
+            lunaPivote.rotation.y += 0.03;
+            luna.rotation.y += 0.01;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
